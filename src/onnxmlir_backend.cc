@@ -97,10 +97,9 @@ TRITONSERVER_Error* ModelState::ReadTensorConfig(char *member, std::vector<std::
     for(size_t i = 0; i< tensors.ArraySize(); i++){
       common::TritonJson::Value tensor;
       RETURN_IF_ERROR(tensors.IndexAsObject(i, &tensor));
-      const char* member;
-      size_t member_len;
-      RETURN_IF_ERROR(tensor.MemberAsString("name", &member, &member_len));
-      names->push_back(std::string(member));
+      std::string member;
+      RETURN_IF_ERROR(tensor.MemberAsString("name", &member));
+      names->push_back(member);
     }
   return nullptr;
 }
@@ -293,6 +292,38 @@ TRITONBACKEND_ModelInstanceFinalize(TRITONBACKEND_ModelInstance* instance)
 
 extern "C" {
 
+OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype)
+{
+  switch (datatype) {
+    case TRITONSERVER_TYPE_BOOL:
+      return ONNX_TYPE_BOOL;
+    case TRITONSERVER_TYPE_UINT8:
+      return ONNX_TYPE_UINT8;
+    case TRITONSERVER_TYPE_UINT16:
+      return ONNX_TYPE_UINT16;
+    case TRITONSERVER_TYPE_UINT32:
+      return ONNX_TYPE_UINT32;
+    case TRITONSERVER_TYPE_UINT64:
+      return ONNX_TYPE_UINT64;
+    case TRITONSERVER_TYPE_INT8:
+      return ONNX_TYPE_INT8;
+    case TRITONSERVER_TYPE_INT16:
+      return ONNX_TYPE_INT16;
+    case TRITONSERVER_TYPE_INT32:
+      return ONNX_TYPE_INT32;
+    case TRITONSERVER_TYPE_INT64:
+      return ONNX_TYPE_INT64;
+    case TRITONSERVER_TYPE_FP32:
+      return ONNX_TYPE_FLOAT;
+    case TRITONSERVER_TYPE_FP64:
+      return ONNX_TYPE_DOUBLE;
+    case TRITONSERVER_TYPE_BYTES:
+      return ONNX_TYPE_STRING;
+    default:
+      break;
+  }
+}
+
 // When Triton calls TRITONBACKEND_ModelInstanceExecute it is required
 // that a backend create a response for each request in the batch. A
 // response may be the output tensors required for that request or may
@@ -385,6 +416,7 @@ TRITONBACKEND_ModelInstanceExecute(
       {{TRITONSERVER_MEMORY_CPU_PINNED, 0}, {TRITONSERVER_MEMORY_CPU, 0}};
 
   const size_t num_inputs = model_state->input_names_.size();
+  OMTensor *om_inputs[num_inputs];
 
   for(size_t i = 0; i < num_inputs; i++){
     const char* input_buffer;
@@ -402,11 +434,20 @@ TRITONBACKEND_ModelInstanceExecute(
     
     TRITONBACKEND_Input* input;
     TRITONBACKEND_RequestInput(requests[0], model_state->input_names_[i].c_str(), &input);
-    const int64_t* shape;
+    const int64_t* shape_ptr;
     uint32_t dims_count;
     TRITONSERVER_DataType datatype;
-    TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape, &dims_count, nullptr, nullptr);
-    
+    TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape_ptr, &dims_count, nullptr, nullptr);
+    int64_t shape[dims_count];
+    memccpy(shape,shape_ptr, dims_count, sizeof(int64_t));
+    int64_t request_size = 1;
+    for(size_t i = 1; i < dims_count; i++)
+      request_size *= shape[i];
+    uint32_t dt_size = TRITONSERVER_DataTypeByteSize(datatype);
+    shape[0] = input_buffer_byte_size / dt_size / request_size;
+    OM_DATA_TYPE om_dtype = TritonDataTypeToOmDataType(datatype);
+    RESPOND_ALL_AND_SET_NULL_IF_FALSE(om_dtype);
+    omTensorCreate
   }
 
   // Finalize the collector. If 'true' is returned, 'input_buffer'
