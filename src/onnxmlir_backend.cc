@@ -63,18 +63,16 @@ class ModelState : public BackendModel {
       TRITONBACKEND_Model* triton_model, ModelState** state);
   virtual ~ModelState() = default;
   std::vector<std::string> input_names_;
-  std::vector<TRITONSERVER_DataType> input_dtypes_;
   std::vector<std::string> output_names_;
-  std::vector<TRITONSERVER_DataType> output_dtypes_;
 
  private:
   ModelState(TRITONBACKEND_Model* triton_model);
-  TRITONSERVER_Error* ModelState::ReadTensorConfig(char* member, std::vector<std::string> *names, std::vector<TRITONSERVER_DataType> *dtypes);
+  TRITONSERVER_Error* ModelState::ReadTensorConfig(char* member, std::vector<std::string> *names);
 };
 
 ModelState::ModelState(TRITONBACKEND_Model* triton_model): BackendModel(triton_model) { 
-    THROW_IF_BACKEND_MODEL_ERROR(ReadTensorConfig("input", &input_names_, &input_dtypes_));
-    THROW_IF_BACKEND_MODEL_ERROR(ReadTensorConfig("output", &output_names_, &output_dtypes_));
+    THROW_IF_BACKEND_MODEL_ERROR(ReadTensorConfig("input", &input_names_));
+    THROW_IF_BACKEND_MODEL_ERROR(ReadTensorConfig("output", &output_names_));
 }
 
 TRITONSERVER_Error*
@@ -93,7 +91,7 @@ ModelState::Create(TRITONBACKEND_Model* triton_model, ModelState** state)
   return nullptr;  // success
 }
 
-TRITONSERVER_Error* ModelState::ReadTensorConfig(char *member, std::vector<std::string> *names, std::vector<TRITONSERVER_DataType> *dtypes){
+TRITONSERVER_Error* ModelState::ReadTensorConfig(char *member, std::vector<std::string> *names){
     common::TritonJson::Value tensors;
     RETURN_IF_ERROR(ModelConfig().MemberAsArray(member, &tensors));
     for(size_t i = 0; i< tensors.ArraySize(); i++){
@@ -103,9 +101,6 @@ TRITONSERVER_Error* ModelState::ReadTensorConfig(char *member, std::vector<std::
       size_t member_len;
       RETURN_IF_ERROR(tensor.MemberAsString("name", &member, &member_len));
       names->push_back(std::string(member));
-      RETURN_IF_ERROR(tensor.MemberAsString("data_type", &member, &member_len));
-      dtypes->push_back(ModelConfigDataTypeToTritonServerDataType(member));
-
     }
   return nullptr;
 }
