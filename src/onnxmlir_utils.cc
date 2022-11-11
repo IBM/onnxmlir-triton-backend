@@ -2,8 +2,6 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
-extern "C" {
-
 OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype)
 {
   switch (datatype) {
@@ -35,7 +33,5 @@ OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype)
       break;
   }
 }
-
-} // extern "C"
 
 }}}  // namespace triton::backend::onnxmlir

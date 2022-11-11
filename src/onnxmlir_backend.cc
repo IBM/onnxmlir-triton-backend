@@ -25,6 +25,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "model_instance_state.h"
+#include "onnxmlir_utils.h"
 
 #include "triton/backend/backend_common.h"
 #include "triton/backend/backend_input_collector.h"
@@ -195,9 +196,9 @@ TRITONBACKEND_ModelInstanceExecute(
       TRITONSERVER_LOG_INFO,
       (std::string("batched IN0 value: ") + tstr).c_str());
 
-  const char* output_buffer = input_buffer;
-  TRITONSERVER_MemoryType output_buffer_memory_type = input_buffer_memory_type;
-  int64_t output_buffer_memory_type_id = input_buffer_memory_type_id;
+  //const char* output_buffer = input_buffer;
+  //TRITONSERVER_MemoryType output_buffer_memory_type = input_buffer_memory_type;
+  //int64_t output_buffer_memory_type_id = input_buffer_memory_type_id;
 
   // This backend supports models that batch along the first dimension
   // and those that don't batch. For non-batch models the output shape

@@ -27,10 +27,6 @@ class ModelState : public BackendModel {
   std::vector<OM_DATA_TYPE> input_dtypes_;
   std::vector<std::string> output_names_;
   std::vector<OM_DATA_TYPE> output_dtypes_;
-
- private:
-  ModelState(TRITONBACKEND_Model* triton_model);
-  TRITONSERVER_Error* ModelState::ReadTensorConfig(char* member, std::vector<std::string> *names, std::vector<OM_DATA_TYPE> *dtypes);
 };
 
 }}}  // namespace triton::backend::onnxmlir

@@ -6,11 +6,7 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
-extern "C" {
-    
 OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype);
-
-} // extern "C"
 
 }}}  // namespace triton::backend::onnxmlir
 
