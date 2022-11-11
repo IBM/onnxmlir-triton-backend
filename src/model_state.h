@@ -1,9 +1,11 @@
 #ifndef ONNX_MLIR_MODEL_STATE_H
 #define ONNX_MLIR_MODEL_STATE_H
-
+ 
 #include <vector>
 #include "triton/backend/backend_model.h"
+
 #include <OnnxMlirRuntime.h>
+
 
 namespace triton { namespace backend { namespace onnxmlir {
 
@@ -23,10 +25,24 @@ class ModelState : public BackendModel {
   static TRITONSERVER_Error* Create(
       TRITONBACKEND_Model* triton_model, ModelState** state);
   virtual ~ModelState() = default;
-  std::vector<std::string> input_names_;
-  std::vector<OM_DATA_TYPE> input_dtypes_;
-  std::vector<std::string> output_names_;
-  std::vector<OM_DATA_TYPE> output_dtypes_;
+  std::vector<TensorDef> input_tensors;
+  std::vector<TensorDef> output_tensors;
+
+ private:
+  ModelState(TRITONBACKEND_Model* triton_model);
+  std::vector<TensorDef> ReadTensorConfig(char *member);
+};
+
+class TensorDef {
+  public:
+    std::string name;
+    std::vector<int64_t> shape;
+    int64_t size;
+    OM_DATA_TYPE om_dtype;
+    TRITONSERVER_DataType triton_dtype;
+    uint32_t dtype_size;
+    int64_t byte_size;
+    TensorDef(triton::common::TritonJson::Value &tensor);   
 };
 
 }}}  // namespace triton::backend::onnxmlir
