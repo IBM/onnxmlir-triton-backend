@@ -25,7 +25,7 @@ ModelState::Create(TRITONBACKEND_Model* triton_model, ModelState** state){
   return nullptr;  // success
 }
 
-std::vector<TensorDef> ModelState::ReadTensorConfig(char *member){
+std::vector<TensorDef> ModelState::ReadTensorConfig(const char *member){
   std::vector<TensorDef> ret;
   common::TritonJson::Value tensors;
   THROW_IF_BACKEND_MODEL_ERROR(ModelConfig().MemberAsArray(member, &tensors));

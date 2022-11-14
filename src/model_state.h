@@ -43,7 +43,7 @@ class ModelState : public BackendModel {
 
  private:
   ModelState(TRITONBACKEND_Model* triton_model);
-  std::vector<TensorDef> ReadTensorConfig(char *member);
+  std::vector<TensorDef> ReadTensorConfig(const char *member);
 };
 
 }}}  // namespace triton::backend::onnxmlir
