@@ -130,12 +130,15 @@ TRITONBACKEND_ModelInstanceExecute(
   // in the triton-inference-server/core repo for allowed memory
   // types).
   std::vector<std::pair<TRITONSERVER_MemoryType, int64_t>> allowed_input_types =
-      {{TRITONSERVER_MEMORY_CPU_PINNED, 0}, {TRITONSERVER_MEMORY_CPU, 0}};
+      {{TRITONSERVER_MEMORY_CPU_PINNED, 0}};
 
-  const size_t num_inputs = model_state->input_names_.size();
-  OMTensor *om_inputs[num_inputs];
+  const size_t num_inputs = model_state->input_tensors.size();
+
+  // will be freed by omTensorListDestroy()
+  OMTensor **om_inputs = (OMTensor **) malloc(num_inputs * sizeof(OMTensor *));
 
   for(size_t i = 0; i < num_inputs; i++){
+    TensorDef input_def = model_state->input_tensors[i];
     const char* input_buffer;
     size_t input_buffer_byte_size;
     TRITONSERVER_MemoryType input_buffer_memory_type;
@@ -144,28 +147,25 @@ TRITONBACKEND_ModelInstanceExecute(
     RESPOND_ALL_AND_SET_NULL_IF_ERROR(
         responses, request_count,
         collector.ProcessTensor(
-            model_state->input_names_[i].c_str(), nullptr /* existing_buffer */,
+            input_def.name.c_str(), nullptr /* existing_buffer */,
             0 /* existing_buffer_byte_size */, allowed_input_types, &input_buffer,
             &input_buffer_byte_size, &input_buffer_memory_type,
             &input_buffer_memory_type_id));
     
-    TRITONBACKEND_Input* input;
-    TRITONBACKEND_RequestInput(requests[0], model_state->input_names_[i].c_str(), &input);
-    const int64_t* shape_ptr;
-    uint32_t dims_count;
-    TRITONSERVER_DataType datatype;
-    TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape_ptr, &dims_count, nullptr, nullptr);
-    int64_t shape[dims_count];
-    memccpy(shape,shape_ptr, dims_count, sizeof(int64_t));
-    int64_t request_size = 1;
-    for(size_t i = 1; i < dims_count; i++)
-      request_size *= shape[i];
-    uint32_t dt_size = TRITONSERVER_DataTypeByteSize(datatype);
-    shape[0] = input_buffer_byte_size / dt_size / request_size;
-    OM_DATA_TYPE om_dtype = TritonDataTypeToOmDataType(datatype);
-    RESPOND_ALL_AND_SET_NULL_IF_FALSE(om_dtype);
-    omTensorCreate
+    //TRITONBACKEND_Input* input;
+    //TRITONBACKEND_RequestInput(requests[0], input_def.name.c_str(), &input);
+    //const int64_t* shape_ptr;
+    //uint32_t dims_count;
+    //TRITONSERVER_DataType datatype;
+    //TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape_ptr, &dims_count, nullptr, nullptr);
+    int64_t in_shape[input_def.shape.size()];
+    std::copy(input_def.shape.begin(), input_def.shape.end(), in_shape);
+    if(model_state->supports_first_dim_batching)
+      in_shape[0] = input_buffer_byte_size / input_def.byte_size;
+    om_inputs[i] = instance_state->dll_omTensorCreate((void* )input_buffer, in_shape, input_def.shape.size(), input_def.om_dtype);
   }
+
+  OMTensorList *om_input_tl = instance_state->dll_omTensorListCreate(om_inputs, num_inputs);
 
   // Finalize the collector. If 'true' is returned, 'input_buffer'
   // will not be valid until the backend synchronizes the CUDA
@@ -174,50 +174,35 @@ TRITONBACKEND_ModelInstanceExecute(
   // be needed; so if 'true' is returned simply log an error.
   const bool need_cuda_input_sync = collector.Finalize();
   if (need_cuda_input_sync) {
+    instance_state->dll_omTensorListDestroy(om_input_tl);
     LOG_MESSAGE(
         TRITONSERVER_LOG_ERROR,
-        "'minimal' backend: unexpected CUDA sync required by collector");
+        "'onnxmlir' backend: unexpected CUDA sync required by collector");
   }
 
-  // 'input_buffer' contains the batched "IN0" tensor. The backend can
-  // implement whatever logic is necesary to produce "OUT0". This
-  // backend simply returns the IN0 value in OUT0 so no actual
-  // computation is needed.
+  //Run the Model
+  OMTensorList *om_output_tl = instance_state->dll_run_main_graph(om_input_tl);
 
+  instance_state->dll_omTensorListDestroy(om_input_tl);
   LOG_MESSAGE(
       TRITONSERVER_LOG_INFO,
       (std::string("model ") + model_state->Name() + ": requests in batch " +
        std::to_string(request_count))
           .c_str());
-  std::string tstr;
-  IGNORE_ERROR(BufferAsTypedString(
-      tstr, input_buffer, input_buffer_byte_size, TRITONSERVER_TYPE_INT32));
-  LOG_MESSAGE(
-      TRITONSERVER_LOG_INFO,
-      (std::string("batched IN0 value: ") + tstr).c_str());
 
-  //const char* output_buffer = input_buffer;
-  //TRITONSERVER_MemoryType output_buffer_memory_type = input_buffer_memory_type;
-  //int64_t output_buffer_memory_type_id = input_buffer_memory_type_id;
-
-  // This backend supports models that batch along the first dimension
-  // and those that don't batch. For non-batch models the output shape
-  // will be [ 4 ]. For batch models the output shape will be [ -1, 4
-  // ] and the backend "responder" utility below will set the
-  // appropriate batch dimension value for each response.
-  std::vector<int64_t> output_batch_shape;
-  bool supports_first_dim_batching;
-  RESPOND_ALL_AND_SET_NULL_IF_ERROR(
+  int64_t config_output_size = model_state->output_tensors.size();
+  int64_t output_size = instance_state->dll_omTensorListGetSize(om_output_tl);
+  if(output_size != output_size){
+    //TODO: Free output list
+    RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
-      model_state->SupportsFirstDimBatching(&supports_first_dim_batching));
-  if (supports_first_dim_batching) {
-    output_batch_shape.push_back(-1);
+      TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
+      ("Number of ouput Tensors missmatches config: " + std::to_string(config_output_size) + " actual: " + std::to_string(output_size)).c_str()));
   }
-  output_batch_shape.push_back(4);
 
-  // Because the OUT0 values are concatenated into a single contiguous
+  // Because the output values are concatenated into a single contiguous
   // 'output_buffer', the backend must "scatter" them out to the
-  // individual response OUT0 tensors.  The backend utilities provide
+  // individual response output tensors.  The backend utilities provide
   // a "responder" to facilitate this scattering process.
 
   // The 'responders's ProcessTensor function will copy the portion of
@@ -226,12 +211,37 @@ TRITONBACKEND_ModelInstanceExecute(
 
   BackendOutputResponder responder(
       requests, request_count, &responses, model_state->TritonMemoryManager(),
-      supports_first_dim_batching, false /* pinned_enabled */,
+      model_state->supports_first_dim_batching, false /* pinned_enabled */,
       nullptr /* stream*/);
 
-  responder.ProcessTensor(
-      "OUT0", TRITONSERVER_TYPE_INT32, output_batch_shape, output_buffer,
-      output_buffer_memory_type, output_buffer_memory_type_id);
+  for(size_t i = 0; i < output_size; i++){
+    TensorDef output_def = model_state->output_tensors[i];
+    OMTensor *om_output = instance_state->dll_omTensorListGetOmtByIndex(om_output_tl, i);
+    void *output_buffer = instance_state->dll_omTensorGetDataPtr(om_output);
+    int64_t out_dims = omTensorGetRank(om_output);
+    if(out_dims != output_def.shape.size() +1 ){
+      //TODO: Free output list
+      RESPOND_ALL_AND_SET_NULL_IF_ERROR(
+      responses, request_count,
+      TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
+      ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims - 1)).c_str()));
+    }
+    int64_t *out_shape = omTensorGetShape(om_output);
+    for(int64_t s = 0; s < output_def.shape.size(); s++){
+      if(out_shape[s + 1] != output_def.shape[s]){
+        //TODO: Free output list
+        RESPOND_ALL_AND_SET_NULL_IF_ERROR(
+        responses, request_count,
+        TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
+        ("ouput shapes missmatch config")));
+      }
+    }
+    //Process tensor might modify output_shape, so we copy it
+    auto output_shape = output_def.shape;
+    responder.ProcessTensor(
+    output_def.name, TRITONSERVER_TYPE_INT32, output_shape, (const char*)output_buffer,
+    TRITONSERVER_MEMORY_CPU_PINNED, 0);
+  }
 
   // Finalize the responder. If 'true' is returned, the OUT0
   // tensors' data will not be valid until the backend synchronizes

@@ -4,9 +4,10 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
-ModelState::ModelState(TRITONBACKEND_Model* triton_model): BackendModel(triton_model){ 
-    input_tensors = ReadTensorConfig("input");
-    output_tensors = ReadTensorConfig("output");
+ModelState::ModelState(TRITONBACKEND_Model* triton_model): BackendModel(triton_model){
+  THROW_IF_BACKEND_MODEL_ERROR(SupportsFirstDimBatching(&supports_first_dim_batching));
+  input_tensors = ReadTensorConfig("input");
+  output_tensors = ReadTensorConfig("output");
 }
 
 TRITONSERVER_Error*
@@ -31,13 +32,13 @@ std::vector<TensorDef> ModelState::ReadTensorConfig(char *member){
   for(size_t i = 0; i< tensors.ArraySize(); i++){
     common::TritonJson::Value tensor;
     THROW_IF_BACKEND_MODEL_ERROR(tensors.IndexAsObject(i, &tensor));
-    TensorDef tensor_def(tensor);
+    TensorDef tensor_def(tensor, supports_first_dim_batching);
     ret.push_back(tensor_def);
   }
   return ret;
 }
 
-TensorDef::TensorDef(triton::common::TritonJson::Value &tensor){
+TensorDef::TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching){
     THROW_IF_BACKEND_MODEL_ERROR(tensor.MemberAsString("name", &name));
     std::string member;
     THROW_IF_BACKEND_MODEL_ERROR(tensor.MemberAsString("data_type", &member));
@@ -57,6 +58,8 @@ TensorDef::TensorDef(triton::common::TritonJson::Value &tensor){
       size *= shape[i];
     }
     byte_size = size * dtype_size;
+    if(supports_first_dim_batching)
+      shape.insert(shape.begin(), -1);
 }
 
 extern "C" {

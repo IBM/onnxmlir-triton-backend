@@ -31,6 +31,7 @@ class ModelInstanceState : public BackendModelInstance {
   OMTensor *(*dll_omTensorListGetOmtByIndex)(OMTensorList *, int64_t);
   void *(*dll_omTensorGetDataPtr)(OMTensor *);
   void (*dll_omTensorDestroy)(OMTensor *tensor);
+  int64_t (*dll_omTensorListGetSize)(OMTensorList *);
   void (*dll_omTensorListDestroy)(OMTensorList *);
 
   // Get the state of the model that corresponds to this instance.

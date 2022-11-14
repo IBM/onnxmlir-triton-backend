@@ -27,6 +27,7 @@ class ModelState : public BackendModel {
   virtual ~ModelState() = default;
   std::vector<TensorDef> input_tensors;
   std::vector<TensorDef> output_tensors;
+  bool supports_first_dim_batching;
 
  private:
   ModelState(TRITONBACKEND_Model* triton_model);
@@ -42,7 +43,7 @@ class TensorDef {
     TRITONSERVER_DataType triton_dtype;
     uint32_t dtype_size;
     int64_t byte_size;
-    TensorDef(triton::common::TritonJson::Value &tensor);   
+    TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching);   
 };
 
 }}}  // namespace triton::backend::onnxmlir
