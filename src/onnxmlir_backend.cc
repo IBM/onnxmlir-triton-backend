@@ -282,4 +282,4 @@ TRITONBACKEND_ModelInstanceExecute(
 
 }  // extern "C"
 
-}}}  // namespace triton::backend::minimal
+}}}  // namespace triton::backend::onnxmlir
