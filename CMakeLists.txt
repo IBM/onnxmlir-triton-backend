@@ -94,6 +94,8 @@ configure_file(src/libtriton_onnxmlir.ldscript libtriton_onnxmlir.ldscript COPYO
 add_library(
   triton-onnxmlir-backend SHARED
   src/onnxmlir_backend.cc
+  src/model_state.cc
+  src/model_instance_state.cc
 )
 
 add_library(
