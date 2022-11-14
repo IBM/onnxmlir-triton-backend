@@ -9,6 +9,18 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
+class TensorDef {
+  public:
+    std::string name;
+    std::vector<int64_t> shape;
+    int64_t size;
+    OM_DATA_TYPE om_dtype;
+    TRITONSERVER_DataType triton_dtype;
+    uint32_t dtype_size;
+    int64_t byte_size;
+    TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching);   
+};
+
 /////////////
 
 //
@@ -32,18 +44,6 @@ class ModelState : public BackendModel {
  private:
   ModelState(TRITONBACKEND_Model* triton_model);
   std::vector<TensorDef> ReadTensorConfig(char *member);
-};
-
-class TensorDef {
-  public:
-    std::string name;
-    std::vector<int64_t> shape;
-    int64_t size;
-    OM_DATA_TYPE om_dtype;
-    TRITONSERVER_DataType triton_dtype;
-    uint32_t dtype_size;
-    int64_t byte_size;
-    TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching);   
 };
 
 }}}  // namespace triton::backend::onnxmlir

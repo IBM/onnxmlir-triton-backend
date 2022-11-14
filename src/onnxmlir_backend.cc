@@ -192,7 +192,7 @@ TRITONBACKEND_ModelInstanceExecute(
 
   int64_t config_output_size = model_state->output_tensors.size();
   int64_t output_size = instance_state->dll_omTensorListGetSize(om_output_tl);
-  if(output_size != output_size){
+  if(output_size != config_output_size){
     instance_state->dll_omTensorListDestroy(om_output_tl);
     RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
@@ -214,12 +214,12 @@ TRITONBACKEND_ModelInstanceExecute(
       model_state->supports_first_dim_batching, false /* pinned_enabled */,
       nullptr /* stream*/);
 
-  for(size_t i = 0; i < output_size; i++){
+  for(int64_t i = 0; i < output_size; i++){
     TensorDef output_def = model_state->output_tensors[i];
     OMTensor *om_output = instance_state->dll_omTensorListGetOmtByIndex(om_output_tl, i);
     void *output_buffer = instance_state->dll_omTensorGetDataPtr(om_output);
-    int64_t out_dims = omTensorGetRank(om_output);
-    if(out_dims != output_def.shape.size() +1 ){
+    int64_t out_dims = output_def.shape.size();
+    if(out_dims != omTensorGetRank(om_output)){
       instance_state->dll_omTensorListDestroy(om_output_tl);
       RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
@@ -227,7 +227,7 @@ TRITONBACKEND_ModelInstanceExecute(
       ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims - 1)).c_str()));
     }
     int64_t *out_shape = omTensorGetShape(om_output);
-    for(int64_t s = 0; s < output_def.shape.size(); s++){
+    for(int64_t s = 0; s < out_dims; s++){
       if(out_shape[s + 1] != output_def.shape[s]){
         instance_state->dll_omTensorListDestroy(om_output_tl);
         RESPOND_ALL_AND_SET_NULL_IF_ERROR(
