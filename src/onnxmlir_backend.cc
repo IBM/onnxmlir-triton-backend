@@ -51,6 +51,7 @@ TRITONBACKEND_ModelInstanceExecute(
     TRITONBACKEND_ModelInstance* instance, TRITONBACKEND_Request** requests,
     const uint32_t request_count)
 {
+  LOG_MESSAGE(TRITONSERVER_LOG_INFO,"onnxmlir ModelInstanceExecute");
   // Triton will not call this function simultaneously for the same
   // 'instance'. But since this backend could be used by multiple
   // instances from multiple models the implementation needs to handle
@@ -180,8 +181,10 @@ TRITONBACKEND_ModelInstanceExecute(
         "'onnxmlir' backend: unexpected CUDA sync required by collector");
   }
 
+  LOG_MESSAGE(TRITONSERVER_LOG_INFO,"onnxmlir run_main_graph start");
   //Run the Model
   OMTensorList *om_output_tl = instance_state->dll_run_main_graph(om_input_tl);
+  LOG_MESSAGE(TRITONSERVER_LOG_INFO,"onnxmlir run_main_graph end");
 
   instance_state->dll_omTensorListDestroy(om_input_tl);
   LOG_MESSAGE(
