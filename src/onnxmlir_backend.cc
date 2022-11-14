@@ -226,7 +226,7 @@ TRITONBACKEND_ModelInstanceExecute(
       TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
       ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims - 1)).c_str()));
     }
-    int64_t *out_shape = omTensorGetShape(om_output);
+    int64_t *out_shape = instance_state->dll_omTensorGetShape(om_output);
     for(int64_t s = 0; s < out_dims; s++){
       if(out_shape[s + 1] != output_def.shape[s]){
         instance_state->dll_omTensorListDestroy(om_output_tl);
