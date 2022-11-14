@@ -193,7 +193,7 @@ TRITONBACKEND_ModelInstanceExecute(
   int64_t config_output_size = model_state->output_tensors.size();
   int64_t output_size = instance_state->dll_omTensorListGetSize(om_output_tl);
   if(output_size != output_size){
-    //TODO: Free output list
+    instance_state->dll_omTensorListDestroy(om_output_tl);
     RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
       TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
@@ -220,7 +220,7 @@ TRITONBACKEND_ModelInstanceExecute(
     void *output_buffer = instance_state->dll_omTensorGetDataPtr(om_output);
     int64_t out_dims = omTensorGetRank(om_output);
     if(out_dims != output_def.shape.size() +1 ){
-      //TODO: Free output list
+      instance_state->dll_omTensorListDestroy(om_output_tl);
       RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
       TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
@@ -229,7 +229,7 @@ TRITONBACKEND_ModelInstanceExecute(
     int64_t *out_shape = omTensorGetShape(om_output);
     for(int64_t s = 0; s < output_def.shape.size(); s++){
       if(out_shape[s + 1] != output_def.shape[s]){
-        //TODO: Free output list
+        instance_state->dll_omTensorListDestroy(om_output_tl);
         RESPOND_ALL_AND_SET_NULL_IF_ERROR(
         responses, request_count,
         TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
@@ -253,8 +253,10 @@ TRITONBACKEND_ModelInstanceExecute(
   if (need_cuda_output_sync) {
     LOG_MESSAGE(
         TRITONSERVER_LOG_ERROR,
-        "'minimal' backend: unexpected CUDA sync required by responder");
+        "'onnxmlir' backend: unexpected CUDA sync required by responder");
   }
+
+  instance_state->dll_omTensorListDestroy(om_output_tl);
 
   // Send all the responses that haven't already been sent because of
   // an earlier error.
