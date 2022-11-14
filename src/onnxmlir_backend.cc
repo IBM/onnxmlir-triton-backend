@@ -131,7 +131,7 @@ TRITONBACKEND_ModelInstanceExecute(
   // in the triton-inference-server/core repo for allowed memory
   // types).
   std::vector<std::pair<TRITONSERVER_MemoryType, int64_t>> allowed_input_types =
-      {{TRITONSERVER_MEMORY_CPU_PINNED, 0}};
+      {{TRITONSERVER_MEMORY_CPU, 0}};
 
   const size_t num_inputs = model_state->input_tensors.size();
 
@@ -245,7 +245,7 @@ TRITONBACKEND_ModelInstanceExecute(
     auto output_shape = output_def.shape;
     responder.ProcessTensor(
     output_def.name, TRITONSERVER_TYPE_INT32, output_shape, (const char*)output_buffer,
-    TRITONSERVER_MEMORY_CPU_PINNED, 0);
+    TRITONSERVER_MEMORY_CPU, 0);
   }
 
   // Finalize the responder. If 'true' is returned, the OUT0
