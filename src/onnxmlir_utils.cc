@@ -2,7 +2,7 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
-OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype)
+OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype) 
 {
   switch (datatype) {
     case TRITONSERVER_TYPE_BOOL:
@@ -30,7 +30,7 @@ OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype)
     case TRITONSERVER_TYPE_BYTES:
       return ONNX_TYPE_STRING;
     default:
-      break;
+      return ONNX_TYPE_UNDEFINED;
   }
 }
 

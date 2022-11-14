@@ -45,7 +45,7 @@ TensorDef::TensorDef(triton::common::TritonJson::Value &tensor, bool supports_fi
     triton_dtype = ModelConfigDataTypeToTritonServerDataType(member);
     dtype_size = TRITONSERVER_DataTypeByteSize(triton_dtype);
     om_dtype = TritonDataTypeToOmDataType(triton_dtype);
-    if(!om_dtype)
+    if(om_dtype == ONNX_TYPE_UNDEFINED)
       throw triton::backend::BackendModelException(TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_UNSUPPORTED, ("No ONNX MLIR datatype for " + member).c_str()));
     triton::common::TritonJson::Value reshape;
     if (tensor.Find("reshape", &reshape)) {
