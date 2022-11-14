@@ -232,13 +232,13 @@ TRITONBACKEND_ModelInstanceExecute(
       ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims)).c_str()));
     }
     int64_t *out_shape = instance_state->dll_omTensorGetShape(om_output);
-    for(int64_t s = 0; s < out_dims; s++){
-      if(out_shape[s + 1] != output_def.shape[s]){
+    for(int64_t s = model_state->supports_first_dim_batching ? 1:0; s < out_dims; s++){
+      if(out_shape[s] != output_def.shape[s]){
         instance_state->dll_omTensorListDestroy(om_output_tl);
         RESPOND_ALL_AND_SET_NULL_IF_ERROR(
         responses, request_count,
         TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
-        ("ouput shapes missmatch config")));
+        ("ouput shape missmatches config")));
       }
     }
     //Process tensor might modify output_shape, so we copy it
