@@ -55,7 +55,7 @@ ModelInstanceState::LoadModel(){
   dll_omTensorGetShape = (int64_t* (*)(OMTensor *))dlsym(model_lib, "omTensorGetShape");
   RETURN_DLERROR_IF_NULL( dll_omTensorGetShape);
   dll_omTensorListGetSize = (int64_t (*)(OMTensorList *))dlsym(model_lib, "omTensorListGetSize");
-  RETURN_DLERROR_IF_NULL(dll_omTensorListDestroy);
+  RETURN_DLERROR_IF_NULL(dll_omTensorListGetSize);
   dll_omTensorListDestroy = (void (*)(OMTensorList *))dlsym(model_lib, "omTensorListDestroy");
   RETURN_DLERROR_IF_NULL(dll_omTensorListDestroy);
   dll_omTensorDestroy = (void (*)(OMTensor *))dlsym(model_lib, "omTensorDestroy");
