@@ -34,7 +34,7 @@ project(onnxmlirbackend LANGUAGES C CXX)
 # Must include options required for this project as well as any
 # projects included in this one by FetchContent.
 #
-# GPU support is disabled by default because minimal backend doesn't
+# GPU support is disabled by default because onnxmlir backend doesn't
 # use GPUs.
 #
 option(TRITON_ENABLE_GPU "Enable GPU support in backend" OFF)
