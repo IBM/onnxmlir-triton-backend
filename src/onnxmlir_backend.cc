@@ -219,12 +219,12 @@ TRITONBACKEND_ModelInstanceExecute(
     OMTensor *om_output = instance_state->dll_omTensorListGetOmtByIndex(om_output_tl, i);
     void *output_buffer = instance_state->dll_omTensorGetDataPtr(om_output);
     int64_t out_dims = output_def.shape.size();
-    if(out_dims != omTensorGetRank(om_output)){
+    if(out_dims != instance_state->dll_omTensorGetRank(om_output)){
       instance_state->dll_omTensorListDestroy(om_output_tl);
       RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
       TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
-      ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims - 1)).c_str()));
+      ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims)).c_str()));
     }
     int64_t *out_shape = instance_state->dll_omTensorGetShape(om_output);
     for(int64_t s = 0; s < out_dims; s++){
