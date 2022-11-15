@@ -1,6 +1,9 @@
 #include "model_state.h"
 #include "onnxmlir_utils.h"
 #include "triton/core/tritonbackend.h"
+
+#include "rapidjson/document.h"
+
 #include <dlfcn.h>
 
 namespace triton { namespace backend { namespace onnxmlir {
@@ -86,22 +89,35 @@ ModelState::LoadModel(){
   LOG_MESSAGE(TRITONSERVER_LOG_INFO,("Loading " + model_path).c_str());
   model_lib = dlopen(model_path.c_str(), RTLD_LAZY);
   RETURN_ERROR_IF_FALSE(model_lib, TRITONSERVER_ERROR_UNAVAILABLE, std::string("failed to load ") + model_path + ": " + dlerror());
-  const char* const* (*dll_omQueryEntryPoints)(int64_t*) = (const char* const* (*)(int64_t*)) dlsym(model_lib, "omQueryEntryPoints");
+  dll_omQueryEntryPoints = (const char* const* (*)(int64_t*)) dlsym(model_lib, "omQueryEntryPoints");
   RETURN_DLERROR_IF_NULL(dll_omQueryEntryPoints);
-  const char* (*dll_omInputSignature)(const char *) = (const char* (*)(const char *)) dlsym(model_lib, "omInputSignature");
+  dll_omInputSignature = (const char* (*)(const char *)) dlsym(model_lib, "omInputSignature");
   RETURN_DLERROR_IF_NULL(dll_omInputSignature);
-  const char* (*dll_omOutputSignature)(const char *) = (const char* (*)(const char *)) dlsym(model_lib, "omOutputSignature");
+  dll_omOutputSignature = (const char* (*)(const char *)) dlsym(model_lib, "omOutputSignature");
   RETURN_DLERROR_IF_NULL(dll_omOutputSignature);
+  const char *entry_point = "run_main_graph";
   int64_t num_entry_points;
   const char* const* entry_points = dll_omQueryEntryPoints(&num_entry_points);
+  bool found = false;
   for(int64_t i=0; i < num_entry_points; i++){
+    if(strcmp(entry_point, entry_points[i]))
+      continue;
+    found = true;
     std::string input_sig(dll_omInputSignature(entry_points[i]));
     std::string output_sig(dll_omOutputSignature(entry_points[i]));
     LOG_MESSAGE(TRITONSERVER_LOG_INFO,("entrypoint: " + std::string(entry_points[i]) 
-                                        + "\n input: " + input_sig
-                                        + "\n output: " + output_sig ).c_str());
+                                        + "\n input:\n" + input_sig
+                                        + "\n output:\n" + output_sig ).c_str());
+    rapidjson::Document d;
+    d.Parse(input_sig.c_str());
+
+    break;
   }
-  dll_run_main_graph = (OMTensorList * (*)(OMTensorList *)) dlsym(model_lib, "run_main_graph");
+  RETURN_ERROR_IF_FALSE(
+        found, TRITONSERVER_ERROR_UNAVAILABLE,
+        "unable to find entry point '" + std::string(entry_point) + " for model '" +
+            Name() + "'");
+  dll_run_main_graph = (OMTensorList * (*)(OMTensorList *)) dlsym(model_lib, entry_point);
   RETURN_DLERROR_IF_NULL(dll_run_main_graph);
   dll_omTensorCreate = (OMTensor * (*)(void *, int64_t *, int64_t, OM_DATA_TYPE)) dlsym(model_lib, "omTensorCreate");
   RETURN_DLERROR_IF_NULL(dll_omTensorCreate);

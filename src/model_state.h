@@ -40,6 +40,9 @@ class ModelState : public BackendModel {
   std::vector<TensorDef> input_tensors;
   std::vector<TensorDef> output_tensors;
   bool supports_first_dim_batching;
+  const char* const* (*dll_omQueryEntryPoints)(int64_t*);
+  const char* (*dll_omInputSignature)(const char *);
+  const char* (*dll_omOutputSignature)(const char *);
   OMTensorList* (*dll_run_main_graph)(OMTensorList *);
   OMTensor* (*dll_omTensorCreate)(void *, int64_t *, int64_t, OM_DATA_TYPE);
   OMTensorList *(*dll_omTensorListCreate)(OMTensor **, int);
