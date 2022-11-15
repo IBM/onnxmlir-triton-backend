@@ -12,6 +12,11 @@ ModelState::ModelState(TRITONBACKEND_Model* triton_model): BackendModel(triton_m
   THROW_IF_BACKEND_MODEL_ERROR(LoadModel());
 }
 
+ModelState::~ModelState(){
+  if(model_lib)
+    dlclose(model_lib);
+}
+
 TRITONSERVER_Error*
 ModelState::Create(TRITONBACKEND_Model* triton_model, ModelState** state){
   try {

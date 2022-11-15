@@ -36,7 +36,7 @@ class ModelState : public BackendModel {
  public:
   static TRITONSERVER_Error* Create(
       TRITONBACKEND_Model* triton_model, ModelState** state);
-  virtual ~ModelState() = default;
+  virtual ~ModelState();
   std::vector<TensorDef> input_tensors;
   std::vector<TensorDef> output_tensors;
   bool supports_first_dim_batching;
@@ -55,7 +55,7 @@ class ModelState : public BackendModel {
   ModelState(TRITONBACKEND_Model* triton_model);
   std::vector<TensorDef> ReadTensorConfig(const char *member);
   TRITONSERVER_Error* LoadModel();
-  void *model_lib;
+  void *model_lib = nullptr;
 };
 
 }}}  // namespace triton::backend::onnxmlir
