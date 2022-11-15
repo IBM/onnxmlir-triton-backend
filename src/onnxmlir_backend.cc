@@ -136,7 +136,7 @@ TRITONBACKEND_ModelInstanceExecute(
   const size_t num_inputs = model_state->input_tensors.size();
 
   // will be freed by omTensorListDestroy()
-  OMTensor **om_inputs = (OMTensor **) malloc(num_inputs * sizeof(OMTensor *));
+  OMTensor *om_inputs[num_inputs];
 
   LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,"onnxmlir create tensors");
 
