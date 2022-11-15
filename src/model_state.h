@@ -40,10 +40,22 @@ class ModelState : public BackendModel {
   std::vector<TensorDef> input_tensors;
   std::vector<TensorDef> output_tensors;
   bool supports_first_dim_batching;
+  OMTensorList* (*dll_run_main_graph)(OMTensorList *);
+  OMTensor* (*dll_omTensorCreate)(void *, int64_t *, int64_t, OM_DATA_TYPE);
+  OMTensorList *(*dll_omTensorListCreate)(OMTensor **, int);
+  OMTensor* (*dll_omTensorListGetOmtByIndex)(OMTensorList *, int64_t);
+  void* (*dll_omTensorGetDataPtr)(OMTensor *);
+  int64_t (*dll_omTensorGetRank)(OMTensor *);
+  int64_t* (*dll_omTensorGetShape)(OMTensor *);
+  void (*dll_omTensorDestroy)(OMTensor *tensor);
+  int64_t (*dll_omTensorListGetSize)(OMTensorList *);
+  void (*dll_omTensorListDestroy)(OMTensorList *);
 
  private:
   ModelState(TRITONBACKEND_Model* triton_model);
   std::vector<TensorDef> ReadTensorConfig(const char *member);
+  TRITONSERVER_Error* LoadModel();
+  void *model_lib;
 };
 
 }}}  // namespace triton::backend::onnxmlir

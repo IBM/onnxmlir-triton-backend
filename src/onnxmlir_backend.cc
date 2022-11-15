@@ -165,10 +165,10 @@ TRITONBACKEND_ModelInstanceExecute(
     std::copy(input_def.shape.begin(), input_def.shape.end(), in_shape);
     if(model_state->supports_first_dim_batching)
       in_shape[0] = input_buffer_byte_size / input_def.byte_size;
-    om_inputs[i] = instance_state->dll_omTensorCreate((void* )input_buffer, in_shape, input_def.shape.size(), input_def.om_dtype);
+    om_inputs[i] = model_state->dll_omTensorCreate((void* )input_buffer, in_shape, input_def.shape.size(), input_def.om_dtype);
   }
 
-  OMTensorList *om_input_tl = instance_state->dll_omTensorListCreate(om_inputs, num_inputs);
+  OMTensorList *om_input_tl = model_state->dll_omTensorListCreate(om_inputs, num_inputs);
 
   // Finalize the collector. If 'true' is returned, 'input_buffer'
   // will not be valid until the backend synchronizes the CUDA
@@ -177,7 +177,7 @@ TRITONBACKEND_ModelInstanceExecute(
   // be needed; so if 'true' is returned simply log an error.
   const bool need_cuda_input_sync = collector.Finalize();
   if (need_cuda_input_sync) {
-    instance_state->dll_omTensorListDestroy(om_input_tl);
+    model_state->dll_omTensorListDestroy(om_input_tl);
     LOG_MESSAGE(
         TRITONSERVER_LOG_ERROR,
         "'onnxmlir' backend: unexpected CUDA sync required by collector");
@@ -185,10 +185,10 @@ TRITONBACKEND_ModelInstanceExecute(
 
   LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,"onnxmlir run_main_graph start");
   //Run the Model
-  OMTensorList *om_output_tl = instance_state->dll_run_main_graph(om_input_tl);
+  OMTensorList *om_output_tl = model_state->dll_run_main_graph(om_input_tl);
   LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,"onnxmlir run_main_graph end");
 
-  instance_state->dll_omTensorListDestroy(om_input_tl);
+  model_state->dll_omTensorListDestroy(om_input_tl);
   LOG_MESSAGE(
       TRITONSERVER_LOG_VERBOSE,
       (std::string("model ") + model_state->Name() + ": requests in batch " +
@@ -196,9 +196,9 @@ TRITONBACKEND_ModelInstanceExecute(
           .c_str());
 
   int64_t config_output_size = model_state->output_tensors.size();
-  int64_t output_size = instance_state->dll_omTensorListGetSize(om_output_tl);
+  int64_t output_size = model_state->dll_omTensorListGetSize(om_output_tl);
   if(output_size != config_output_size){
-    instance_state->dll_omTensorListDestroy(om_output_tl);
+    model_state->dll_omTensorListDestroy(om_output_tl);
     RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
       TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
@@ -221,20 +221,20 @@ TRITONBACKEND_ModelInstanceExecute(
 
   for(int64_t i = 0; i < output_size; i++){
     TensorDef output_def = model_state->output_tensors[i];
-    OMTensor *om_output = instance_state->dll_omTensorListGetOmtByIndex(om_output_tl, i);
-    void *output_buffer = instance_state->dll_omTensorGetDataPtr(om_output);
+    OMTensor *om_output = model_state->dll_omTensorListGetOmtByIndex(om_output_tl, i);
+    void *output_buffer = model_state->dll_omTensorGetDataPtr(om_output);
     int64_t out_dims = output_def.shape.size();
-    if(out_dims != instance_state->dll_omTensorGetRank(om_output)){
-      instance_state->dll_omTensorListDestroy(om_output_tl);
+    if(out_dims != model_state->dll_omTensorGetRank(om_output)){
+      model_state->dll_omTensorListDestroy(om_output_tl);
       RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
       TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
       ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims)).c_str()));
     }
-    int64_t *out_shape = instance_state->dll_omTensorGetShape(om_output);
+    int64_t *out_shape = model_state->dll_omTensorGetShape(om_output);
     for(int64_t s = model_state->supports_first_dim_batching ? 1:0; s < out_dims; s++){
       if(out_shape[s] != output_def.shape[s]){
-        instance_state->dll_omTensorListDestroy(om_output_tl);
+        model_state->dll_omTensorListDestroy(om_output_tl);
         RESPOND_ALL_AND_SET_NULL_IF_ERROR(
         responses, request_count,
         TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
@@ -261,7 +261,7 @@ TRITONBACKEND_ModelInstanceExecute(
         "'onnxmlir' backend: unexpected CUDA sync required by responder");
   }
 
-  instance_state->dll_omTensorListDestroy(om_output_tl);
+  model_state->dll_omTensorListDestroy(om_output_tl);
 
   // Send all the responses that haven't already been sent because of
   // an earlier error.
