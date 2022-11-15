@@ -9,7 +9,7 @@ ModelState::ModelState(TRITONBACKEND_Model* triton_model): BackendModel(triton_m
   THROW_IF_BACKEND_MODEL_ERROR(SupportsFirstDimBatching(&supports_first_dim_batching));
   input_tensors = ReadTensorConfig("input");
   output_tensors = ReadTensorConfig("output");
-  LoadModel();
+  THROW_IF_BACKEND_MODEL_ERROR(LoadModel());
 }
 
 TRITONSERVER_Error*
