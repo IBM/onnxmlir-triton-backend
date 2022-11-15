@@ -51,7 +51,7 @@ TRITONBACKEND_ModelInstanceExecute(
     TRITONBACKEND_ModelInstance* instance, TRITONBACKEND_Request** requests,
     const uint32_t request_count)
 {
-  LOG_MESSAGE(TRITONSERVER_LOG_INFO,"onnxmlir ModelInstanceExecute");
+  LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,"onnxmlir ModelInstanceExecute");
   // Triton will not call this function simultaneously for the same
   // 'instance'. But since this backend could be used by multiple
   // instances from multiple models the implementation needs to handle
@@ -138,7 +138,7 @@ TRITONBACKEND_ModelInstanceExecute(
   // will be freed by omTensorListDestroy()
   OMTensor **om_inputs = (OMTensor **) malloc(num_inputs * sizeof(OMTensor *));
 
-  LOG_MESSAGE(TRITONSERVER_LOG_INFO,"onnxmlir create tensors");
+  LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,"onnxmlir create tensors");
 
   for(size_t i = 0; i < num_inputs; i++){
     TensorDef input_def = model_state->input_tensors[i];
@@ -183,14 +183,14 @@ TRITONBACKEND_ModelInstanceExecute(
         "'onnxmlir' backend: unexpected CUDA sync required by collector");
   }
 
-  LOG_MESSAGE(TRITONSERVER_LOG_INFO,"onnxmlir run_main_graph start");
+  LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,"onnxmlir run_main_graph start");
   //Run the Model
   OMTensorList *om_output_tl = instance_state->dll_run_main_graph(om_input_tl);
-  LOG_MESSAGE(TRITONSERVER_LOG_INFO,"onnxmlir run_main_graph end");
+  LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,"onnxmlir run_main_graph end");
 
   instance_state->dll_omTensorListDestroy(om_input_tl);
   LOG_MESSAGE(
-      TRITONSERVER_LOG_INFO,
+      TRITONSERVER_LOG_VERBOSE,
       (std::string("model ") + model_state->Name() + ": requests in batch " +
        std::to_string(request_count))
           .c_str());
