@@ -45,7 +45,7 @@ class ModelState : public BackendModel {
   const char* (*dll_omOutputSignature)(const char *);
   OMTensorList* (*dll_run_main_graph)(OMTensorList *);
   OMTensor* (*dll_omTensorCreate)(void *, int64_t *, int64_t, OM_DATA_TYPE);
-  OMTensorList *(*dll_omTensorListCreateWithOwnership)(OMTensor **, int);
+  OMTensorList *(*dll_omTensorListCreate)(OMTensor **, int);
   OMTensor* (*dll_omTensorListGetOmtByIndex)(OMTensorList *, int64_t);
   void* (*dll_omTensorGetDataPtr)(OMTensor *);
   int64_t (*dll_omTensorGetRank)(OMTensor *);
