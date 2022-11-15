@@ -38,6 +38,7 @@ ModelInstanceState::LoadModel(){
         std::string("unable to find '") + model_path + "' for model '" +
             Name() + "'");
   }
+  LOG_MESSAGE(TRITONSERVER_LOG_INFO,("Loading " + model_path).c_str());
   model_lib = dlopen(model_path.c_str(), RTLD_LAZY);
   RETURN_ERROR_IF_FALSE(model_lib, TRITONSERVER_ERROR_UNAVAILABLE, std::string("failed to load ") + model_path + ": " + dlerror());
   dll_run_main_graph = (OMTensorList * (*)(OMTensorList *)) dlsym(model_lib, "run_main_graph");
