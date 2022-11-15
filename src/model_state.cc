@@ -121,8 +121,8 @@ ModelState::LoadModel(){
   RETURN_DLERROR_IF_NULL(dll_run_main_graph);
   dll_omTensorCreate = (OMTensor * (*)(void *, int64_t *, int64_t, OM_DATA_TYPE)) dlsym(model_lib, "omTensorCreate");
   RETURN_DLERROR_IF_NULL(dll_omTensorCreate);
-  dll_omTensorListCreate = (OMTensorList * (*)(OMTensor **, int)) dlsym(model_lib, "omTensorListCreate");
-  RETURN_DLERROR_IF_NULL(dll_omTensorListCreate);
+  dll_omTensorListCreateWithOwnership = (OMTensorList * (*)(OMTensor **, int)) dlsym(model_lib, "omTensorListCreateWithOwnership");
+  RETURN_DLERROR_IF_NULL(dll_omTensorListCreateWithOwnership);
   dll_omTensorListGetOmtByIndex = (OMTensor * (*)(OMTensorList *, int64_t)) dlsym(model_lib, "omTensorListGetOmtByIndex");
   RETURN_DLERROR_IF_NULL(dll_omTensorListGetOmtByIndex);
   dll_omTensorGetDataPtr = (void* (*)(OMTensor *))dlsym(model_lib, "omTensorGetDataPtr");

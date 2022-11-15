@@ -168,7 +168,7 @@ TRITONBACKEND_ModelInstanceExecute(
     om_inputs[i] = model_state->dll_omTensorCreate((void* )input_buffer, in_shape, input_def.shape.size(), input_def.om_dtype);
   }
 
-  OMTensorList *om_input_tl = model_state->dll_omTensorListCreate(om_inputs, num_inputs);
+  OMTensorList *om_input_tl = model_state->dll_omTensorListCreateWithOwnership(om_inputs, num_inputs);
 
   // Finalize the collector. If 'true' is returned, 'input_buffer'
   // will not be valid until the backend synchronizes the CUDA
