@@ -37,8 +37,6 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
-/////////////
-
 extern "C" {
 
 // When Triton calls TRITONBACKEND_ModelInstanceExecute it is required
@@ -221,25 +219,15 @@ TRITONBACKEND_ModelInstanceExecute(
   for(int64_t i = 0; i < output_size; i++){
     TensorDef output_def = model_state->output_tensors[i];
     OMTensor *om_output = model_state->dll_omTensorListGetOmtByIndex(om_output_tl, i);
-    void *output_buffer = model_state->dll_omTensorGetDataPtr(om_output);
-    int64_t out_dims = output_def.shape.size();
-    if(out_dims != model_state->dll_omTensorGetRank(om_output)){
-      model_state->dll_omTensorListDestroy(om_output_tl);
+    std::string error;
+    if(!output_def.CheckTensorMatches(model_state, om_output, error)){
       RESPOND_ALL_AND_SET_NULL_IF_ERROR(
       responses, request_count,
       TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
-      ("Number of ouput dimensions missmatches config: " + std::to_string(output_def.shape.size()) + " actual: " + std::to_string(out_dims)).c_str()));
+      ("model output: " + error).c_str()));
     }
-    int64_t *out_shape = model_state->dll_omTensorGetShape(om_output);
-    for(int64_t s = model_state->supports_first_dim_batching ? 1:0; s < out_dims; s++){
-      if(out_shape[s] != output_def.shape[s]){
-        model_state->dll_omTensorListDestroy(om_output_tl);
-        RESPOND_ALL_AND_SET_NULL_IF_ERROR(
-        responses, request_count,
-        TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
-        ("ouput shape missmatches config")));
-      }
-    }
+    void *output_buffer = model_state->dll_omTensorGetDataPtr(om_output);
+
     //Process tensor might modify output_shape, so we copy it
     auto output_shape = output_def.shape;
     responder.ProcessTensor(

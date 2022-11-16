@@ -8,6 +8,52 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
+TensorDef::TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching){
+    THROW_IF_BACKEND_MODEL_ERROR(tensor.MemberAsString("name", &name));
+    std::string member;
+    THROW_IF_BACKEND_MODEL_ERROR(tensor.MemberAsString("data_type", &member));
+    triton_dtype = ModelConfigDataTypeToTritonServerDataType(member);
+    dtype_size = TRITONSERVER_DataTypeByteSize(triton_dtype);
+    om_dtype = TritonDataTypeToOmDataType(triton_dtype);
+    if(om_dtype == ONNX_TYPE_UNDEFINED)
+      throw triton::backend::BackendModelException(TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_UNSUPPORTED, ("No ONNX MLIR datatype for " + member).c_str()));
+    triton::common::TritonJson::Value reshape;
+    if (tensor.Find("reshape", &reshape)) {
+      THROW_IF_BACKEND_MODEL_ERROR(ParseShape(reshape, "shape", &shape));
+    } else {
+      THROW_IF_BACKEND_MODEL_ERROR(ParseShape(tensor, "dims", &shape));
+    }
+    size = shape[0];
+    for(size_t i = 1; i < shape.size(); i++){
+      size *= shape[i];
+    }
+    byte_size = size * dtype_size;
+    if(supports_first_dim_batching)
+      shape.insert(shape.begin(), -1);
+}
+
+bool TensorDef::CheckTensorMatches(ModelState *model_state, OMTensor *tensor, std::string &error){
+  OM_DATA_TYPE tensor_dt = model_state->dll_omTensorGetDataType(tensor);
+  if(tensor_dt != om_dtype){
+    error = "datatype missmatches config";
+  }
+  int64_t tensor_dims = shape.size();
+  if(tensor_dims != model_state->dll_omTensorGetRank(tensor)){
+    error = "number of dimensions missmatches config: " + std::to_string(shape.size()) + " actual: " + std::to_string(tensor_dims);
+    return false;
+  }
+  int64_t *tensor_shape = model_state->dll_omTensorGetShape(tensor);
+  for(int64_t s = model_state->supports_first_dim_batching ? 1:0; s < tensor_dims; s++){
+    if(tensor_shape[s] != shape[s]){
+      std::string shape_str;
+      IGNORE_ERROR(BufferAsTypedString(shape_str, (const char*)tensor_shape, tensor_dims * sizeof(int64_t), TRITONSERVER_TYPE_INT64));
+      error = "shape missmatches config: " + shape_str;
+      return false;
+    }
+  }
+  return true;
+}
+
 ModelState::ModelState(TRITONBACKEND_Model* triton_model): BackendModel(triton_model){
   THROW_IF_BACKEND_MODEL_ERROR(SupportsFirstDimBatching(&supports_first_dim_batching));
   input_tensors = ReadTensorConfig("input");
@@ -46,30 +92,6 @@ std::vector<TensorDef> ModelState::ReadTensorConfig(const char *member){
     ret.push_back(tensor_def);
   }
   return ret;
-}
-
-TensorDef::TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching){
-    THROW_IF_BACKEND_MODEL_ERROR(tensor.MemberAsString("name", &name));
-    std::string member;
-    THROW_IF_BACKEND_MODEL_ERROR(tensor.MemberAsString("data_type", &member));
-    triton_dtype = ModelConfigDataTypeToTritonServerDataType(member);
-    dtype_size = TRITONSERVER_DataTypeByteSize(triton_dtype);
-    om_dtype = TritonDataTypeToOmDataType(triton_dtype);
-    if(om_dtype == ONNX_TYPE_UNDEFINED)
-      throw triton::backend::BackendModelException(TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_UNSUPPORTED, ("No ONNX MLIR datatype for " + member).c_str()));
-    triton::common::TritonJson::Value reshape;
-    if (tensor.Find("reshape", &reshape)) {
-      THROW_IF_BACKEND_MODEL_ERROR(ParseShape(reshape, "shape", &shape));
-    } else {
-      THROW_IF_BACKEND_MODEL_ERROR(ParseShape(tensor, "dims", &shape));
-    }
-    size = shape[0];
-    for(size_t i = 1; i < shape.size(); i++){
-      size *= shape[i];
-    }
-    byte_size = size * dtype_size;
-    if(supports_first_dim_batching)
-      shape.insert(shape.begin(), -1);
 }
 
 #define RETURN_DLERROR_IF_NULL(x) RETURN_ERROR_IF_FALSE(x, TRITONSERVER_ERROR_UNAVAILABLE, std::string(dlerror()))
@@ -131,6 +153,8 @@ ModelState::LoadModel(){
   RETURN_DLERROR_IF_NULL( dll_omTensorGetRank);
   dll_omTensorGetShape = (int64_t* (*)(OMTensor *))dlsym(model_lib, "omTensorGetShape");
   RETURN_DLERROR_IF_NULL( dll_omTensorGetShape);
+  dll_omTensorGetDataType = (OM_DATA_TYPE (*)(OMTensor *))dlsym(model_lib, "omTensorGetDataType");
+  RETURN_DLERROR_IF_NULL( dll_omTensorGetDataType);
   dll_omTensorListGetSize = (int64_t (*)(OMTensorList *))dlsym(model_lib, "omTensorListGetSize");
   RETURN_DLERROR_IF_NULL(dll_omTensorListGetSize);
   dll_omTensorListDestroy = (void (*)(OMTensorList *))dlsym(model_lib, "omTensorListDestroy");

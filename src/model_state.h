@@ -9,6 +9,8 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
+class ModelState;
+
 class TensorDef {
   public:
     std::string name;
@@ -18,7 +20,8 @@ class TensorDef {
     TRITONSERVER_DataType triton_dtype;
     uint32_t dtype_size;
     int64_t byte_size;
-    TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching);   
+    TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching);
+    bool CheckTensorMatches(ModelState *model_state, OMTensor *tensor, std::string &error);
 };
 
 /////////////
@@ -50,6 +53,7 @@ class ModelState : public BackendModel {
   void* (*dll_omTensorGetDataPtr)(OMTensor *);
   int64_t (*dll_omTensorGetRank)(OMTensor *);
   int64_t* (*dll_omTensorGetShape)(OMTensor *);
+  OM_DATA_TYPE (*dll_omTensorGetDataType)(OMTensor *);
   void (*dll_omTensorDestroy)(OMTensor *tensor);
   int64_t (*dll_omTensorListGetSize)(OMTensorList *);
   void (*dll_omTensorListDestroy)(OMTensorList *);
