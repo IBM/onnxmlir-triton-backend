@@ -22,6 +22,7 @@ class TensorDef {
     int64_t byte_size;
     TensorDef(triton::common::TritonJson::Value &tensor, bool supports_first_dim_batching);
     bool CheckTensorMatches(ModelState *model_state, OMTensor *tensor, std::string &error);
+    bool CheckSignature(const rapidjson::Value &signature);
 };
 
 /////////////

@@ -54,6 +54,21 @@ bool TensorDef::CheckTensorMatches(ModelState *model_state, OMTensor *tensor, st
   return true;
 }
 
+bool TensorDef::CheckSignature(const rapidjson::Value &signature){
+  if(signature["name"].GetString() != name)
+    return false;
+  // no mapping for the types for now
+  //const rapidjson::Value& type = tensor["type"];
+  const rapidjson::Value& dims = signature["dims"];
+  if(dims.Size() != shape.size())
+    return false;
+  for(rapidjson::SizeType j = 0; j < dims.Size(); j++){
+    if(dims[j].GetInt64() != shape[j])
+      return false;
+  }
+  return true;
+}
+
 ModelState::ModelState(TRITONBACKEND_Model* triton_model): BackendModel(triton_model){
   THROW_IF_BACKEND_MODEL_ERROR(SupportsFirstDimBatching(&supports_first_dim_batching));
   input_tensors = ReadTensorConfig("input");
@@ -94,6 +109,19 @@ std::vector<TensorDef> ModelState::ReadTensorConfig(const char *member){
   return ret;
 }
 
+bool CheckSignature(const char *signature, std::vector<TensorDef> &config){
+  rapidjson::Document d;
+  d.Parse(signature);
+  if(d.Size() != config.size())
+    return false;
+  for (rapidjson::SizeType i = 0; i < d.Size(); i++){ // rapidjson uses SizeType instead of size_t.
+      const rapidjson::Value& tensor = d[i];
+      if(!config[i].CheckSignature(tensor))
+        return false;
+  }
+  return false;
+}
+
 #define RETURN_DLERROR_IF_NULL(x) RETURN_ERROR_IF_FALSE(x, TRITONSERVER_ERROR_UNAVAILABLE, std::string(dlerror()))
 
 TRITONSERVER_Error*
@@ -117,22 +145,30 @@ ModelState::LoadModel(){
   RETURN_DLERROR_IF_NULL(dll_omInputSignature);
   dll_omOutputSignature = (const char* (*)(const char *)) dlsym(model_lib, "omOutputSignature");
   RETURN_DLERROR_IF_NULL(dll_omOutputSignature);
-  const char *entry_point = "run_main_graph";
+  
   int64_t num_entry_points;
   const char* const* entry_points = dll_omQueryEntryPoints(&num_entry_points);
+  const char *entry_point = "run_main_graph";
   bool found = false;
   for(int64_t i=0; i < num_entry_points; i++){
     if(strcmp(entry_point, entry_points[i]))
       continue;
-    found = true;
     std::string input_sig(dll_omInputSignature(entry_points[i]));
     std::string output_sig(dll_omOutputSignature(entry_points[i]));
     LOG_MESSAGE(TRITONSERVER_LOG_INFO,("entrypoint: " + std::string(entry_points[i]) 
                                         + "\n input:\n" + input_sig
                                         + "\n output:\n" + output_sig ).c_str());
-    rapidjson::Document d;
-    d.Parse(input_sig.c_str());
-
+    RETURN_ERROR_IF_FALSE(
+        CheckSignature(input_sig.c_str(), input_tensors),
+        TRITONSERVER_ERROR_UNAVAILABLE,
+        "input signature for entry point '" + std::string(entry_point) + " for model '" +
+            Name() + "' mismatches config");
+    RETURN_ERROR_IF_FALSE(
+        CheckSignature(output_sig.c_str(), output_tensors),
+        TRITONSERVER_ERROR_UNAVAILABLE,
+        "output signature for entry point '" + std::string(entry_point) + " for model '" +
+            Name() + "' mismatches config");
+    found = true;
     break;
   }
   RETURN_ERROR_IF_FALSE(
