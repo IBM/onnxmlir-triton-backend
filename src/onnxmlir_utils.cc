@@ -35,7 +35,7 @@ OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype)
 }
 
 const std::map<std::string, OM_DATA_TYPE> OM_DATA_TYPE_MLIR_TO_ONNX = {
-    {"b", ONNX_TYPE_BOOL},   // bool  -> BOOL
+    {"i1", ONNX_TYPE_BOOL},   // bool  -> BOOL
     {"i8", ONNX_TYPE_INT8},   // char  -> INT8 (platform dependent, can be UINT8)
     {"si8", ONNX_TYPE_INT8},   // int8_t   -> INT8
     {"ui8", ONNX_TYPE_UINT8},  // uint8_t  -> UINT8,  unsigned char  -> UNIT 8
