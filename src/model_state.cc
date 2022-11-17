@@ -113,6 +113,8 @@ std::vector<TensorDef> ModelState::ReadTensorConfig(const char *member){
 bool CheckSignature(const char *signature, std::vector<TensorDef> &config){
   rapidjson::Document d;
   d.Parse(signature);
+  if(d.HasParseError())
+    return false;
   if(d.Size() != config.size())
     return false;
   for (rapidjson::SizeType i = 0; i < d.Size(); i++){
