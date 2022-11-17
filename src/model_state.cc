@@ -57,8 +57,9 @@ bool TensorDef::CheckTensorMatches(ModelState *model_state, OMTensor *tensor, st
 bool TensorDef::CheckSignature(const rapidjson::Value &signature){
   if(signature["name"].GetString() != name)
     return false;
-  // no mapping for the types for now
-  //const rapidjson::Value& type = tensor["type"];
+  OM_DATA_TYPE type = MlirDataTypeToOmDataType(signature["type"].GetString());
+  if(om_dtype != type)
+    return false;
   const rapidjson::Value& dims = signature["dims"];
   if(dims.Size() != shape.size())
     return false;
@@ -114,7 +115,7 @@ bool CheckSignature(const char *signature, std::vector<TensorDef> &config){
   d.Parse(signature);
   if(d.Size() != config.size())
     return false;
-  for (rapidjson::SizeType i = 0; i < d.Size(); i++){ // rapidjson uses SizeType instead of size_t.
+  for (rapidjson::SizeType i = 0; i < d.Size(); i++){
       const rapidjson::Value& tensor = d[i];
       if(!config[i].CheckSignature(tensor))
         return false;

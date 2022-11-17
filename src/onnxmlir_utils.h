@@ -6,6 +6,7 @@
 
 namespace triton { namespace backend { namespace onnxmlir {
 
+OM_DATA_TYPE MlirDataTypeToOmDataType(std::string datatype);
 OM_DATA_TYPE TritonDataTypeToOmDataType(TRITONSERVER_DataType datatype);
 
 }}}  // namespace triton::backend::onnxmlir
