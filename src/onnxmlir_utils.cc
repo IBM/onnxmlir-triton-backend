@@ -50,7 +50,7 @@ const std::map<std::string, OM_DATA_TYPE> OM_DATA_TYPE_MLIR_TO_ONNX = {
     {"ui64", ONNX_TYPE_UINT64}, // uint64_t -> UINT64, unsigned long  -> UINT64
     {"f32", ONNX_TYPE_FLOAT},  // float    -> FLOAT
     {"f64", ONNX_TYPE_DOUBLE}, // double   -> DOUBLE
-    //{"PKc", ONNX_TYPE_STRING},    // const char * -> STRING
+    {"!krnl.string", ONNX_TYPE_STRING},    // const char * -> STRING
     {"complex<f32>", ONNX_TYPE_COMPLEX64},  // _Complex float -> COMPLEX64
     {"complex<f64>", ONNX_TYPE_COMPLEX128}, // _Complex double -> COMPLEX128
 };
