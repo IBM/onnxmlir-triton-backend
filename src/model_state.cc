@@ -122,7 +122,7 @@ bool CheckSignature(const char *signature, std::vector<TensorDef> &config){
       if(!config[i].CheckSignature(tensor))
         return false;
   }
-  return false;
+  return true;
 }
 
 #define RETURN_DLERROR_IF_NULL(x) RETURN_ERROR_IF_FALSE(x, TRITONSERVER_ERROR_UNAVAILABLE, std::string(dlerror()))
