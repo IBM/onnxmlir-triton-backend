@@ -66,7 +66,7 @@ bool TensorDef::CheckSignature(const rapidjson::Value &signature, std::string &e
   }
   const rapidjson::Value& dims = signature["dims"];
   if(dims.Size() != shape.size()){
-    error = "shape";
+    error = "rank";
     return false;
   }
   for(rapidjson::SizeType j = 0; j < dims.Size(); j++){
