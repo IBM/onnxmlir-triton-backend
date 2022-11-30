@@ -192,6 +192,13 @@ TRITONBACKEND_ModelInstanceExecute(
        std::to_string(request_count))
           .c_str());
 
+  if(!om_output_tl){
+    RESPOND_ALL_AND_SET_NULL_IF_ERROR(
+      responses, request_count,
+      TRITONSERVER_ErrorNew(TRITONSERVER_ERROR_INVALID_ARG, 
+      ("Error while running model")));
+  }
+
   int64_t config_output_size = model_state->output_tensors.size();
   int64_t output_size = model_state->dll_omTensorListGetSize(om_output_tl);
   if(output_size != config_output_size){
