@@ -27,13 +27,13 @@
 include(CMakeFindDependencyMacro)
 
 get_filename_component(
-  TUTORIALMINIMALBACKEND_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH
+  ONNXMLIRBACKEND_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH
 )
 
-list(APPEND CMAKE_MODULE_PATH ${TUTORIALMINIMALBACKEND_CMAKE_DIR})
+list(APPEND CMAKE_MODULE_PATH ${ONNXMLIRBACKEND_CMAKE_DIR})
 
-if(NOT TARGET TutorialMinimalBackend::triton-minimal-backend)
-  include("${TUTORIALMINIMALBACKEND_CMAKE_DIR}/TutorialMinimalBackendTargets.cmake")
+if(NOT TARGET OnnxMlirBackend::triton-onnxmlir-backend)
+  include("${ONNXMLIRBACKEND_CMAKE_DIR}/OnnxMlirBackendTargets.cmake")
 endif()
 
-set(TUTORIALMINIMALBACKEND_LIBRARIES TutorialMinimalBackend::triton-minimal-backend)
+set(ONNXMLIRBACKEND_LIBRARIES OnnxMlirBackend::triton-onnxmlir-backend)
