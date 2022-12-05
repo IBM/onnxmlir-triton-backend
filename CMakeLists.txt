@@ -98,7 +98,7 @@ add_library(
   src/onnxmlir_backend.cc
   src/model_state.cc
   src/model_instance_state.cc
-  src/onnxmlir_utils.cc
+  src/onnxmlir_typemapping.cc
 )
 
 add_library(

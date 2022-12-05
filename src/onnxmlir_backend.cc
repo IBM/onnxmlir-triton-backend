@@ -27,7 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "model_instance_state.h"
-#include "onnxmlir_utils.h"
+#include "onnxmlir_typemapping.h"
 
 #include "triton/backend/backend_common.h"
 #include "triton/backend/backend_input_collector.h"

@@ -1,6 +1,6 @@
 // Copyright contributors to the onnxmlir-triton-backend project
 
-#include "onnxmlir_utils.h"
+#include "onnxmlir_typemapping.h"
 
 namespace triton { namespace backend { namespace onnxmlir {
 
