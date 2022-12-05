@@ -1,3 +1,5 @@
+// Copyright contributors to the onnxmlir-triton-backend project
+
 #ifndef ONNX_MLIR_UTILS_H
 #define ONNX_MLIR_UTILS_H
 

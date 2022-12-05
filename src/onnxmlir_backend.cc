@@ -1,3 +1,5 @@
+// Copyright contributors to the onnxmlir-triton-backend project
+
 // Copyright 2021, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
