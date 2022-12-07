@@ -1,7 +1,7 @@
 # onnxmlir-triton-backend
 
 A triton backend which allows the usage of [onnx-mlir](https://onnx.ai/onnx-mlir/) or [zDLC](https://github.com/IBM/zDLC) compiled models (model.so) 
-with the triton inference server.
+with the [triton inference server](https://github.com/triton-inference-server).
 
 At the moment there is no GPU support.
 
