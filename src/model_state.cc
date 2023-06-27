@@ -179,7 +179,7 @@ ModelState::LoadModel(){
         std::string("unable to find '") + model_path + "' for model '" +
             Name() + "'");
   }
-  LOG_MESSAGE(TRITONSERVER_LOG_INFO,("Loading " + model_path).c_str());
+  LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,("Loading " + model_path).c_str());
   model_lib = dlopen(model_path.c_str(), RTLD_LAZY);
   RETURN_ERROR_IF_FALSE(model_lib, TRITONSERVER_ERROR_UNAVAILABLE, std::string("failed to load ") + model_path + ": " + dlerror());
   dll_omQueryEntryPoints = (const char* const* (*)(int64_t*)) dlsym(model_lib, "omQueryEntryPoints");
@@ -198,7 +198,7 @@ ModelState::LoadModel(){
       continue;
     std::string input_sig(dll_omInputSignature(entry_points[i]));
     std::string output_sig(dll_omOutputSignature(entry_points[i]));
-    LOG_MESSAGE(TRITONSERVER_LOG_INFO,("entrypoint: " + std::string(entry_points[i]) 
+    LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,("entrypoint: " + std::string(entry_points[i])
                                         + "\n input:\n" + input_sig
                                         + "\n output:\n" + output_sig ).c_str());
     std::string error;                                        
