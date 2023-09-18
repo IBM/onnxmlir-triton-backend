@@ -98,7 +98,8 @@ bool TensorDef::CheckSignature(const rapidjson::Value &signature, std::string &e
     return false;
   }
   for(rapidjson::SizeType j = 0; j < dims.Size(); j++){
-    if(dims[j].GetInt64() != shape[j]){
+    int64_t model_dim = dims[j].GetInt64();
+    if(model_dim != -1 && model_dim != shape[j]){
       error = "shape";
       return false;
     }

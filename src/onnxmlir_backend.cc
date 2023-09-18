@@ -153,18 +153,20 @@ TRITONBACKEND_ModelInstanceExecute(
             0 /* existing_buffer_byte_size */, allowed_input_types, &input_buffer,
             &input_buffer_byte_size, &input_buffer_memory_type,
             &input_buffer_memory_type_id));
-    
-    //TRITONBACKEND_Input* input;
-    //TRITONBACKEND_RequestInput(requests[0], input_def.name.c_str(), &input);
-    //const int64_t* shape_ptr;
-    //uint32_t dims_count;
-    //TRITONSERVER_DataType datatype;
-    //TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape_ptr, &dims_count, nullptr, nullptr);
-    int64_t in_shape[input_def.shape.size()];
-    std::copy(input_def.shape.begin(), input_def.shape.end(), in_shape);
+
+
+    TRITONBACKEND_Input* input;
+    TRITONBACKEND_RequestInput(requests[0], input_def.name.c_str(), &input);
+    const int64_t* shape_ptr;
+    uint32_t dims_count;
+    TRITONSERVER_DataType datatype;
+    TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape_ptr, &dims_count, nullptr, nullptr);
+
+    int64_t in_shape[dims_count];
+    std::copy(shape_ptr, shape_ptr + dims_count, in_shape);
     if(model_state->supports_first_dim_batching)
       in_shape[0] = input_buffer_byte_size / input_def.byte_size;
-    om_inputs[i] = model_state->dll_omTensorCreate((void* )input_buffer, in_shape, input_def.shape.size(), input_def.om_dtype);
+    om_inputs[i] = model_state->dll_omTensorCreate((void* )input_buffer, in_shape, dims_count, input_def.om_dtype);
   }
 
   OMTensorList *om_input_tl = model_state->dll_omTensorListCreate(om_inputs, num_inputs);
