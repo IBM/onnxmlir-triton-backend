@@ -72,7 +72,7 @@ bool TensorDef::CheckTensorMatches(ModelState *model_state, OMTensor *tensor, st
   }
   int64_t *tensor_shape = model_state->dll_omTensorGetShape(tensor);
   for(int64_t s = model_state->supports_first_dim_batching ? 1:0; s < tensor_dims; s++){
-    if(tensor_shape[s] != shape[s]){
+    if(shape[s] != -1 && tensor_shape[s] != shape[s]){
       std::string shape_str;
       IGNORE_ERROR(BufferAsTypedString(shape_str, (const char*)tensor_shape, tensor_dims * sizeof(int64_t), TRITONSERVER_TYPE_INT64));
       error = "shape missmatches config: " + shape_str;
