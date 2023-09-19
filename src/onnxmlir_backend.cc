@@ -164,8 +164,13 @@ TRITONBACKEND_ModelInstanceExecute(
 
     int64_t in_shape[dims_count];
     std::copy(shape_ptr, shape_ptr + dims_count, in_shape);
-    if(model_state->supports_first_dim_batching)
-      in_shape[0] = input_buffer_byte_size / input_def.byte_size;
+    if(model_state->supports_first_dim_batching) {
+      size_t features_size = input_def.dtype_size;
+      for(u_int32_t d = 1; d < dims_count; d++){
+        features_size *= shape_ptr[d];
+      } 
+      in_shape[0] = input_buffer_byte_size / features_size;
+    }
     om_inputs[i] = model_state->dll_omTensorCreate((void* )input_buffer, in_shape, dims_count, input_def.om_dtype);
   }
 
