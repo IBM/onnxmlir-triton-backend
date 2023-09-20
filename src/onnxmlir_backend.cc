@@ -247,10 +247,10 @@ TRITONBACKEND_ModelInstanceExecute(
     //Process tensor might modify output_shape, so we copy it
     int64_t rank = model_state->dll_omTensorGetRank(om_output);
     int64_t *output_shape_ptr = model_state->dll_omTensorGetShape(om_output);
-    std::vector<int64_t> output_shape(output_shape_ptr, output_shape_ptr + rank);;
+    std::vector<int64_t> output_shape(output_shape_ptr, output_shape_ptr + rank);
     responder.ProcessTensor(
-    output_def.name, output_def.triton_dtype, output_shape, (const char*)output_buffer,
-    TRITONSERVER_MEMORY_CPU, 0);
+      output_def.name, output_def.triton_dtype, output_shape, (const char*)output_buffer,
+      TRITONSERVER_MEMORY_CPU, 0);
   }
 
   // Finalize the responder. If 'true' is returned, the OUT0
