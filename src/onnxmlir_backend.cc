@@ -156,11 +156,13 @@ TRITONBACKEND_ModelInstanceExecute(
 
 
     TRITONBACKEND_Input* input;
-    TRITONBACKEND_RequestInput(requests[0], input_def.name.c_str(), &input);
+    RETURN_IF_ERROR(
+      TRITONBACKEND_RequestInput(requests[0], input_def.name.c_str(), &input));
     const int64_t* shape_ptr;
     uint32_t dims_count;
     TRITONSERVER_DataType datatype;
-    TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape_ptr, &dims_count, nullptr, nullptr);
+    RETURN_IF_ERROR(
+      TRITONBACKEND_InputProperties(input, nullptr, &datatype, &shape_ptr, &dims_count, nullptr, nullptr));
 
     int64_t in_shape[dims_count];
     std::copy(shape_ptr, shape_ptr + dims_count, in_shape);
